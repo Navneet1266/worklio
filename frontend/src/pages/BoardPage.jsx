@@ -13,6 +13,7 @@ import Board from '../components/Board/Board';
 import CardModal from '../components/Card/CardModal';
 import SprintBanner from '../components/Sprint/SprintBanner';
 import SprintManager from '../components/Sprint/SprintManager';
+import BacklogView from '../components/Sprint/BacklogView';
 import TeamView from '../components/Board/TeamView';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
@@ -51,6 +52,7 @@ export default function BoardPage() {
   const [showSearch, setShowSearch]         = useState(false);
   const [showSprintManager, setShowSprintManager] = useState(false);
   const [showTeamView, setShowTeamView]     = useState(false);
+  const [view, setView]                     = useState('board'); // 'board' | 'backlog'
 
   useSocket(boardId);
 
@@ -318,10 +320,14 @@ export default function BoardPage() {
 
         {/* View toggle */}
         <div className="hidden sm:flex items-center gap-0.5 bg-white/10 border border-white/15 rounded-xl p-0.5">
-          <button className="p-1.5 rounded-lg text-white" style={{ background: 'rgba(255,255,255,0.2)' }} title="Board view">
+          <button onClick={() => setView('board')}
+            className={`p-1.5 rounded-lg transition-colors ${view === 'board' ? 'text-white bg-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/10'}`}
+            title="Board view">
             <LayoutGrid size={14} />
           </button>
-          <button className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-colors" title="List view (coming soon)">
+          <button onClick={() => setView('backlog')}
+            className={`p-1.5 rounded-lg transition-colors ${view === 'backlog' ? 'text-white bg-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/10'}`}
+            title="Backlog view">
             <ListIcon size={14} />
           </button>
         </div>
@@ -332,13 +338,17 @@ export default function BoardPage() {
         <SprintBanner onManage={() => setShowSprintManager(true)} />
       </div>
 
-      {/* ══ BOARD ══ */}
-      <div className="relative z-10 flex-1 overflow-hidden">
-        <Board boardId={boardId}
-          searchQuery={searchQuery}
-          filterPriority={filterPriority}
-          filterType={filterType}
-          filterAssignee={filterAssignee} />
+      {/* ══ BOARD / BACKLOG ══ */}
+      <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
+        {view === 'board' ? (
+          <Board boardId={boardId}
+            searchQuery={searchQuery}
+            filterPriority={filterPriority}
+            filterType={filterType}
+            filterAssignee={filterAssignee} />
+        ) : (
+          <BacklogView boardId={boardId} />
+        )}
       </div>
 
       {activeCard && <CardModal />}

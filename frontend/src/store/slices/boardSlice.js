@@ -37,9 +37,9 @@ export const deleteList = createAsyncThunk('board/deleteList', async (id, { reje
   }
 });
 
-export const createCard = createAsyncThunk('board/createCard', async ({ title, listId, boardId }, { rejectWithValue }) => {
+export const createCard = createAsyncThunk('board/createCard', async ({ title, listId, boardId, sprint }, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/cards', { title, listId, boardId });
+    const { data } = await api.post('/cards', { title, listId, boardId, ...(sprint ? { sprint } : {}) });
     return { card: data, listId };
   } catch (err) {
     return rejectWithValue(err.response?.data?.message);

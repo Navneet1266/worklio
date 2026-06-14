@@ -29,7 +29,7 @@ const populateCard = (query) =>
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { title, listId, boardId } = req.body;
+    const { title, listId, boardId, sprint } = req.body;
     if (!title?.trim() || !listId || !boardId) {
       return res.status(400).json({ message: 'Title, listId, and boardId required' });
     }
@@ -46,6 +46,7 @@ router.post('/', auth, async (req, res) => {
       board: boardId,
       position,
       createdBy: req.user._id,
+      ...(sprint ? { sprint } : {}),
     });
 
     await logActivity({
