@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useDispatch } from 'react-redux';
-import { Paperclip, CheckSquare, Clock, AlignLeft, MessageCircle, Hash } from 'lucide-react';
+import { Paperclip, CheckSquare, Clock, AlignLeft, Layers, Hash, Flag } from 'lucide-react';
 import { setActiveCard } from '../../store/slices/boardSlice';
 import { format, isPast, isToday, differenceInDays } from 'date-fns';
 
@@ -101,6 +101,24 @@ export default function Card({ card }) {
         <p className={`text-[13px] font-bold leading-snug mb-2.5 line-clamp-2 ${isDone ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
           {card.title}
         </p>
+
+        {/* Sprint / Backlog badge */}
+        <div className="flex items-center gap-1 mb-2">
+          {card.sprint?.title ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+              <Layers size={8} /> {card.sprint.title}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-black text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+              <Layers size={8} /> Backlog
+            </span>
+          )}
+          {card.flagged && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              <Flag size={8} /> Blocked
+            </span>
+          )}
+        </div>
 
         {/* Story points */}
         {card.storyPoints > 0 && (

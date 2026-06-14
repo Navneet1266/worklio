@@ -1,22 +1,37 @@
 import { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { Plus, X } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Plus, X, Layers } from 'lucide-react';
 import { createCard } from '../../store/slices/boardSlice';
 import toast from 'react-hot-toast';
 
 export default function AddCard({ listId, boardId }) {
   const dispatch = useDispatch();
+  const { sprints } = useSelector(s => s.sprints);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
+  const [sprintId, setSprintId] = useState('');
   const textareaRef = useRef(null);
 
-  useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
+  const activeSprints = sprints.filter(s => s.status !== 'completed');
+
+  useEffect(() => {
+    if (open) {
+      textareaRef.current?.focus();
+      const active = sprints.find(s => s.status === 'active');
+      setSprintId(active?._id || '');
+    }
+  }, [open]);
 
   const handleSubmit = async e => {
     e.preventDefault();
     if (!title.trim()) return;
     try {
-      await dispatch(createCard({ title: title.trim(), listId, boardId })).unwrap();
+      await dispatch(createCard({
+        title: title.trim(),
+        listId,
+        boardId,
+        ...(sprintId ? { sprint: sprintId } : {}),
+      })).unwrap();
       setTitle('');
       textareaRef.current?.focus();
     } catch {
@@ -49,6 +64,24 @@ export default function AddCard({ listId, boardId }) {
           if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); }
           if (e.key === 'Escape') { setOpen(false); setTitle(''); }
         }} />
+
+      {activeSprints.length > 0 && (
+        <div className="flex items-center gap-2 mt-2">
+          <Layers size={12} className="text-slate-400 shrink-0" />
+          <select
+            value={sprintId}
+            onChange={e => setSprintId(e.target.value)}
+            className="flex-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200">
+            <option value="">Backlog (no sprint)</option>
+            {activeSprints.map(s => (
+              <option key={s._id} value={s._id}>
+                {s.title}{s.status === 'active' ? ' (active)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mt-2">
         <button type="submit"
           className="text-xs font-black px-4 py-2 rounded-xl text-white shadow-sm transition-opacity hover:opacity-90"

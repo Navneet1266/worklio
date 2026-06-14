@@ -109,6 +109,7 @@ export default function CardModal() {
       const watchers = activeCard.watchers || [];
       setWatching(watchers.some(w => (w._id || w) === user?._id));
       setWatcherCount(watchers.length);
+      setFlagged(activeCard.flagged || false);
     }
   }, [activeCard?._id]);
 
@@ -147,6 +148,18 @@ export default function CardModal() {
       toast(data.watching ? '👁 Watching this card' : 'Stopped watching');
     } catch {
       toast.error('Failed to update watch status');
+    }
+  };
+
+  const handleToggleFlagged = async () => {
+    const next = !flagged;
+    setFlagged(next);
+    try {
+      await dispatch(updateCard({ id: activeCard._id, flagged: next })).unwrap();
+      toast(next ? '🚩 Marked as impediment' : 'Impediment flag removed');
+    } catch {
+      setFlagged(!next);
+      toast.error('Failed to update flag');
     }
   };
 
@@ -312,7 +325,7 @@ export default function CardModal() {
               <HeroBtn onClick={handleToggleWatch} active={watching} title={watching ? 'Stop watching' : 'Watch'}>
                 {watching ? <Eye size={14} /> : <EyeOff size={14} />}
               </HeroBtn>
-              <HeroBtn onClick={() => setFlagged(v => !v)} active={flagged} title="Flag as impediment">
+              <HeroBtn onClick={handleToggleFlagged} active={flagged} title="Flag as impediment">
                 <Flag size={14} />
               </HeroBtn>
               <div className="w-px h-5 bg-white/20 mx-1" />
@@ -1028,7 +1041,7 @@ export default function CardModal() {
                     { icon: Eye, label: watching ? `Watching${watcherCount > 1 ? ` (${watcherCount})` : ''}` : `Watch${watcherCount > 0 ? ` (${watcherCount})` : ''}`,
                       onClick: handleToggleWatch, active: watching },
                     { icon: Flag, label: flagged ? 'Flagged' : 'Flag',
-                      onClick: () => setFlagged(v => !v), active: flagged },
+                      onClick: handleToggleFlagged, active: flagged },
                     { icon: Trash2, label: 'Delete', onClick: handleDeleteCard, danger: true },
                   ].map(({ icon: Icon, label, onClick, disabled, accent, danger, active }) => (
                     <button key={label} onClick={onClick} disabled={disabled}

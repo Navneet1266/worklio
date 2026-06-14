@@ -125,7 +125,7 @@ router.put('/:id', auth, async (req, res) => {
 
     const {
       title, description, dueDate, startDate, labels, coverColor,
-      priority, cardType, storyPoints, progress, sprint, dependencies,
+      priority, cardType, storyPoints, progress, sprint, dependencies, flagged,
     } = req.body;
     if (title !== undefined) card.title = title.trim();
     if (description !== undefined) card.description = description;
@@ -138,6 +138,7 @@ router.put('/:id', auth, async (req, res) => {
     if (storyPoints !== undefined) card.storyPoints = storyPoints;
     if (sprint !== undefined) card.sprint = sprint || null;
     if (dependencies !== undefined) card.dependencies = dependencies;
+    if (flagged !== undefined) card.flagged = flagged;
     if (progress !== undefined) {
       card.progress = progress;
       if (progress >= 100 && !card.completedAt) card.completedAt = new Date();
