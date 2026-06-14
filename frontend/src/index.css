@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-feature-settings: 'cv02','cv03','cv04','cv11';
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400; }
+
+  h1,h2,h3,h4 { @apply tracking-tight; }
+}
+
+@layer components {
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg
+           bg-indigo-600 text-white shadow-sm
+           transition-all duration-150 focus:outline-none
+           disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  }
+  .btn-primary:hover { @apply bg-indigo-700; }
+  .btn-primary:active { @apply bg-indigo-800; }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg
+           bg-white text-slate-700 border border-slate-200 shadow-sm
+           transition-all duration-150 focus:outline-none select-none;
+  }
+  .btn-secondary:hover { @apply bg-slate-50; }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg
+           bg-red-500 text-white shadow-sm transition-all duration-150 focus:outline-none;
+  }
+  .btn-danger:hover { @apply bg-red-600; }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg
+           text-slate-600 transition-all duration-150 focus:outline-none;
+  }
+  .btn-ghost:hover { @apply bg-slate-100 text-slate-900; }
+
+  .btn-ghost-white {
+    @apply inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg
+           text-white/75 transition-all duration-150 focus:outline-none;
+  }
+  .btn-ghost-white:hover { @apply text-white bg-white/15; }
+
+  .btn-sm {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
+           transition-all duration-150 focus:outline-none select-none;
+  }
+
+  /* ── Inputs ── */
+  .input-field {
+    @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm
+           text-slate-900 placeholder:text-slate-400 transition-all duration-150
+           outline-none;
+  }
+  .input-field:focus {
+    @apply border-indigo-400 ring-2 ring-indigo-500/20;
+  }
+
+  /* ── Surfaces ── */
+  .surface {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+  }
+
+  /* ── Kanban card ── */
+  .kanban-card {
+    @apply bg-white rounded-xl border border-slate-200 p-3
+           cursor-pointer transition-all duration-150;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .kanban-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    @apply border-slate-300 -translate-y-0.5;
+  }
+
+  /* ── Board list ── */
+  .board-list {
+    background: rgba(241,245,249,0.92);
+    backdrop-filter: blur(4px);
+    @apply rounded-2xl flex flex-col gap-0.5 border border-white/60;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4;
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.15s ease-out;
+  }
+  .modal-panel {
+    @apply bg-white rounded-2xl w-full relative;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    animation: scaleIn 0.15s ease-out;
+  }
+
+  /* ── Sidebar items ── */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400
+           transition-all duration-100 cursor-pointer w-full;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.08); @apply text-white; }
+  .sidebar-item-active {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white
+           transition-all duration-100 cursor-pointer w-full;
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* ── Badges ── */
+  .badge { @apply inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full; }
+}
+
+/* Board scroll */
+.board-scroll {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  min-height: 0;
+}
+
+/* List card scroll */
+.list-cards-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* DnD overlay */
+.dnd-overlay {
+  opacity: 0.9;
+  transform: rotate(1.5deg) scale(1.03);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.25);
+  border-radius: 12px;
+}
