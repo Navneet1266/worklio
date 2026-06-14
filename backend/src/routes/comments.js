@@ -42,7 +42,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'Text and cardId required' });
     }
 
-    const card = await Card.findById(cardId).populate('assignees', 'name email avatar');
+    const card = await Card.findById(cardId).populate('assignees', 'name email avatar').populate('watchers', 'name avatar');
     if (!card) return res.status(404).json({ message: 'Card not found' });
 
     const { board, error, status } = await checkBoardAccess(card.board.toString(), req.user._id.toString());
@@ -81,6 +81,23 @@ router.post('/', auth, async (req, res) => {
         io.to(`user:${assignee._id}`).emit('notification:new', notification);
         sendCommentEmail(assignee, comment, card, board, req.user);
       }
+    }
+
+    // Notify watchers (skip commenter + assignees already notified above)
+    const notifiedIds = card.assignees.map(a => a._id.toString());
+    for (const watcher of (card.watchers || [])) {
+      const wId = watcher._id.toString();
+      if (wId === req.user._id.toString() || notifiedIds.includes(wId)) continue;
+      const notification = await createNotification({
+        recipient: watcher._id,
+        sender: req.user._id,
+        type: 'comment',
+        message: `${req.user.name} commented on "${card.title}"`,
+        link: `/board/${card.board}`,
+        card: card._id,
+        board: card.board,
+      });
+      if (notification) io.to(`user:${wId}`).emit('notification:new', notification);
     }
 
     res.status(201).json(comment);

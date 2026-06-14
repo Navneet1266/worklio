@@ -25,7 +25,25 @@ const populateCard = (query) =>
     .populate('createdBy', 'name avatar')
     .populate('attachments.uploadedBy', 'name avatar')
     .populate('sprint', 'title status startDate endDate')
-    .populate('dependencies', 'title cardType priority _id list');
+    .populate('dependencies', 'title cardType priority _id list')
+    .populate('watchers', 'name avatar');
+
+const notifyWatchers = async (card, sender, message, io, excludeIds = []) => {
+  const excluded = new Set([sender._id.toString(), ...excludeIds.map(String)]);
+  for (const watcherId of (card.watchers || [])) {
+    if (excluded.has(watcherId.toString())) continue;
+    const notification = await createNotification({
+      recipient: watcherId,
+      sender: sender._id,
+      type: 'card_updated',
+      message,
+      link: `/board/${card.board}`,
+      card: card._id,
+      board: card.board,
+    });
+    if (notification) io.to(`user:${watcherId}`).emit('notification:new', notification);
+  }
+};
 
 router.post('/', auth, async (req, res) => {
   try {
@@ -139,7 +157,37 @@ router.put('/:id', auth, async (req, res) => {
     const io = req.app.get('io');
     io.to(`board:${card.board}`).emit('card:updated', { card: populated, boardId: card.board });
 
+    if (card.watchers?.length) {
+      await notifyWatchers(card, req.user, `${req.user.name} updated "${card.title}"`, io);
+    }
+
     res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/cards/:id/watch — toggle watching a card
+router.post('/:id/watch', auth, async (req, res) => {
+  try {
+    const card = await Card.findById(req.params.id);
+    if (!card) return res.status(404).json({ message: 'Card not found' });
+
+    const { error, status } = await checkBoardAccess(card.board.toString(), req.user._id.toString());
+    if (error) return res.status(status).json({ message: error });
+
+    const userId = req.user._id.toString();
+    const idx = card.watchers.findIndex(w => w.toString() === userId);
+    if (idx === -1) card.watchers.push(req.user._id);
+    else card.watchers.splice(idx, 1);
+    await card.save();
+
+    const watching = idx === -1;
+    const populated = await populateCard(Card.findById(card._id));
+    const io = req.app.get('io');
+    io.to(`board:${card.board}`).emit('card:updated', { card: populated, boardId: card.board });
+
+    res.json({ watching, watchers: populated.watchers });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -50,6 +50,7 @@ const cardSchema = new mongoose.Schema({
     movedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     _id: false,
   }],
+  watchers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   archived: { type: Boolean, default: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });

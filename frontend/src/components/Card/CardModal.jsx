@@ -90,6 +90,7 @@ export default function CardModal() {
   const [checklistTitle, setChecklistTitle] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [watching, setWatching] = useState(false);
+  const [watcherCount, setWatcherCount] = useState(0);
   const [flagged, setFlagged] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const fileInputRef = useRef(null);
@@ -105,6 +106,9 @@ export default function CardModal() {
       setEditingTitle(false); setEditingDesc(false);
       setShowMoveSprint(false); setOpenDropdown(null);
       setActiveTab('overview');
+      const watchers = activeCard.watchers || [];
+      setWatching(watchers.some(w => (w._id || w) === user?._id));
+      setWatcherCount(watchers.length);
     }
   }, [activeCard?._id]);
 
@@ -134,6 +138,17 @@ export default function CardModal() {
 
   const close = () => { setOpenDropdown(null); dispatch(setActiveCard(null)); };
   const toggleDropdown = key => setOpenDropdown(p => p === key ? null : key);
+
+  const handleToggleWatch = async () => {
+    try {
+      const { data } = await api.post(`/cards/${activeCard._id}/watch`);
+      setWatching(data.watching);
+      setWatcherCount(data.watchers.length);
+      toast(data.watching ? '👁 Watching this card' : 'Stopped watching');
+    } catch {
+      toast.error('Failed to update watch status');
+    }
+  };
 
   const saveTitle = async () => {
     setEditingTitle(false);
@@ -294,7 +309,7 @@ export default function CardModal() {
             {/* Right: action buttons */}
             <div className="flex items-center gap-1.5 shrink-0">
               <HeroBtn onClick={copyIssueLink} title="Copy link"><Copy size={14} /></HeroBtn>
-              <HeroBtn onClick={() => setWatching(v => !v)} active={watching} title={watching ? 'Stop watching' : 'Watch'}>
+              <HeroBtn onClick={handleToggleWatch} active={watching} title={watching ? 'Stop watching' : 'Watch'}>
                 {watching ? <Eye size={14} /> : <EyeOff size={14} />}
               </HeroBtn>
               <HeroBtn onClick={() => setFlagged(v => !v)} active={flagged} title="Flag as impediment">
@@ -1010,8 +1025,8 @@ export default function CardModal() {
                       onClick: () => fileInputRef.current?.click(), disabled: uploading },
                     { icon: FastForward, label: 'Move Sprint',
                       onClick: () => { setShowMoveSprint(v => !v); setActiveTab('overview'); }, accent: true },
-                    { icon: Eye, label: watching ? 'Watching' : 'Watch',
-                      onClick: () => setWatching(v => !v), active: watching },
+                    { icon: Eye, label: watching ? `Watching${watcherCount > 1 ? ` (${watcherCount})` : ''}` : `Watch${watcherCount > 0 ? ` (${watcherCount})` : ''}`,
+                      onClick: handleToggleWatch, active: watching },
                     { icon: Flag, label: flagged ? 'Flagged' : 'Flag',
                       onClick: () => setFlagged(v => !v), active: flagged },
                     { icon: Trash2, label: 'Delete', onClick: handleDeleteCard, danger: true },
