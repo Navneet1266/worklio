@@ -91,7 +91,12 @@ export default function CardModal() {
   const [activeTab, setActiveTab] = useState('overview');
   const [watching, setWatching] = useState(false);
   const [watcherCount, setWatcherCount] = useState(0);
+  const [watchLoading, setWatchLoading] = useState(false);
   const [flagged, setFlagged] = useState(false);
+  const [deletingCard, setDeletingCard] = useState(false);
+  const [addingCL, setAddingCL] = useState(false);
+  const [movingSprint, setMovingSprint] = useState(false);
+  const [deletingAttachId, setDeletingAttachId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -141,6 +146,8 @@ export default function CardModal() {
   const toggleDropdown = key => setOpenDropdown(p => p === key ? null : key);
 
   const handleToggleWatch = async () => {
+    if (watchLoading) return;
+    setWatchLoading(true);
     try {
       const { data } = await api.post(`/cards/${activeCard._id}/watch`);
       setWatching(data.watching);
@@ -148,6 +155,8 @@ export default function CardModal() {
       toast(data.watching ? '👁 Watching this card' : 'Stopped watching');
     } catch {
       toast.error('Failed to update watch status');
+    } finally {
+      setWatchLoading(false);
     }
   };
 
@@ -218,11 +227,14 @@ export default function CardModal() {
     } catch { toast.error('Failed to move card'); }
   };
   const handleMoveToSprint = async () => {
+    if (movingSprint) return;
+    setMovingSprint(true);
     try {
       await dispatch(moveCardToSprint({ cardId: activeCard._id, targetSprintId: moveTargetSprintId || undefined, comment: moveComment || undefined })).unwrap();
       setShowMoveSprint(false); setMoveComment('');
       toast.success(moveTargetSprintId ? 'Moved to sprint' : 'Moved to backlog');
     } catch { toast.error('Failed to move to sprint'); }
+    finally { setMovingSprint(false); }
   };
   const handleFileUpload = async e => {
     const file = e.target.files?.[0]; if (!file) return;
@@ -233,18 +245,26 @@ export default function CardModal() {
     finally { setUploading(false); e.target.value = ''; }
   };
   const handleDeleteAttachment = async id => {
+    if (deletingAttachId) return;
+    setDeletingAttachId(id);
     try { await api.delete(`/uploads/card/${activeCard._id}/${id}`); }
     catch { toast.error('Failed to remove attachment'); }
+    finally { setDeletingAttachId(null); }
   };
   const handleDeleteCard = async () => {
-    if (!confirm('Delete this issue? This cannot be undone.')) return;
-    await dispatch(deleteCard({ id: activeCard._id, listId: currentList?._id }));
-    close();
+    if (deletingCard || !confirm('Delete this issue? This cannot be undone.')) return;
+    setDeletingCard(true);
+    try {
+      await dispatch(deleteCard({ id: activeCard._id, listId: currentList?._id }));
+      close();
+    } catch { toast.error('Failed to delete'); setDeletingCard(false); }
   };
   const handleAddChecklist = async e => {
-    e.preventDefault(); if (!checklistTitle.trim()) return;
+    e.preventDefault(); if (!checklistTitle.trim() || addingCL) return;
+    setAddingCL(true);
     try { await api.post(`/cards/${activeCard._id}/checklists`, { title: checklistTitle.trim() }); setChecklistTitle(''); setAddingChecklist(false); }
     catch { toast.error('Failed to add checklist'); }
+    finally { setAddingCL(false); }
   };
   const copyIssueLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/board/${board?._id}?card=${activeCard._id}`);
@@ -322,7 +342,7 @@ export default function CardModal() {
             {/* Right: action buttons */}
             <div className="flex items-center gap-1.5 shrink-0">
               <HeroBtn onClick={copyIssueLink} title="Copy link"><Copy size={14} /></HeroBtn>
-              <HeroBtn onClick={handleToggleWatch} active={watching} title={watching ? 'Stop watching' : 'Watch'}>
+              <HeroBtn onClick={handleToggleWatch} active={watching} disabled={watchLoading} title={watching ? 'Stop watching' : 'Watch'}>
                 {watching ? <Eye size={14} /> : <EyeOff size={14} />}
               </HeroBtn>
               <HeroBtn onClick={handleToggleFlagged} active={flagged} title="Flag as impediment">
@@ -604,10 +624,10 @@ export default function CardModal() {
                       <input value={checklistTitle} onChange={e => setChecklistTitle(e.target.value)}
                         placeholder="Checklist title…" className="input-field flex-1 text-sm" autoFocus
                         onKeyDown={e => e.key === 'Escape' && setAddingChecklist(false)} />
-                      <button type="submit"
-                        className="text-xs font-bold px-3 py-1.5 rounded-xl text-white"
+                      <button type="submit" disabled={addingCL}
+                        className="text-xs font-bold px-3 py-1.5 rounded-xl text-white disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{ background: `linear-gradient(135deg,${typeInfo.heroFrom},${typeInfo.heroTo})` }}>
-                        Add
+                        {addingCL ? '…' : 'Add'}
                       </button>
                       <button type="button" onClick={() => setAddingChecklist(false)}
                         className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={14} /></button>
@@ -690,8 +710,8 @@ export default function CardModal() {
                                   className="text-xs font-bold text-indigo-600 hover:underline truncate block">{att.originalName}</a>
                                 {att.size && <p className="text-[10px] text-slate-400 mt-0.5">{Math.round(att.size / 1024)} KB</p>}
                               </div>
-                              <button onClick={() => handleDeleteAttachment(att._id)}
-                                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all"><Trash2 size={12} /></button>
+                              <button onClick={() => handleDeleteAttachment(att._id)} disabled={deletingAttachId === att._id}
+                                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"><Trash2 size={12} /></button>
                             </div>
                           );
                         })}
@@ -718,9 +738,10 @@ export default function CardModal() {
                         className="w-full text-sm border border-indigo-200 bg-white rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500"
                         onKeyDown={e => e.key === 'Enter' && handleMoveToSprint()} />
                       <div className="flex gap-2">
-                        <button onClick={handleMoveToSprint}
-                          className="flex-1 text-white text-sm font-bold py-2.5 rounded-xl transition-opacity hover:opacity-90"
-                          style={{ background: `linear-gradient(135deg,${typeInfo.heroFrom},${typeInfo.heroTo})` }}>Move</button>
+                        <button onClick={handleMoveToSprint} disabled={movingSprint}
+                          className="flex-1 text-white text-sm font-bold py-2.5 rounded-xl transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                          style={{ background: `linear-gradient(135deg,${typeInfo.heroFrom},${typeInfo.heroTo})` }}>
+                          {movingSprint ? 'Moving…' : 'Move'}</button>
                         <button onClick={() => { setShowMoveSprint(false); setMoveComment(''); }}
                           className="px-4 bg-white border border-indigo-200 text-indigo-700 text-sm py-2.5 rounded-xl hover:bg-indigo-50 transition-colors">Cancel</button>
                       </div>
@@ -1039,10 +1060,10 @@ export default function CardModal() {
                     { icon: FastForward, label: 'Move Sprint',
                       onClick: () => { setShowMoveSprint(v => !v); setActiveTab('overview'); }, accent: true },
                     { icon: Eye, label: watching ? `Watching${watcherCount > 1 ? ` (${watcherCount})` : ''}` : `Watch${watcherCount > 0 ? ` (${watcherCount})` : ''}`,
-                      onClick: handleToggleWatch, active: watching },
+                      onClick: handleToggleWatch, active: watching, disabled: watchLoading },
                     { icon: Flag, label: flagged ? 'Flagged' : 'Flag',
                       onClick: handleToggleFlagged, active: flagged },
-                    { icon: Trash2, label: 'Delete', onClick: handleDeleteCard, danger: true },
+                    { icon: Trash2, label: deletingCard ? 'Deleting…' : 'Delete', onClick: handleDeleteCard, danger: true, disabled: deletingCard },
                   ].map(({ icon: Icon, label, onClick, disabled, accent, danger, active }) => (
                     <button key={label} onClick={onClick} disabled={disabled}
                       className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border text-xs font-bold transition-all disabled:opacity-50 ${
@@ -1114,10 +1135,10 @@ export default function CardModal() {
 
 /* ── helpers ── */
 
-function HeroBtn({ onClick, title, active, children }) {
+function HeroBtn({ onClick, title, active, disabled, children }) {
   return (
-    <button onClick={onClick} title={title}
-      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+    <button onClick={onClick} title={title} disabled={disabled}
+      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
         active ? 'bg-white/30 text-white' : 'text-white/70 hover:bg-white/20 hover:text-white'
       }`}>
       {children}

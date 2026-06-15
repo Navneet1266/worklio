@@ -104,8 +104,11 @@ export default function BoardPage() {
 
   const isStarred    = board.starred?.includes(user?._id);
   const boardMembers = board.members || [];
+  const [starring, setStarring] = useState(false);
 
   const handleStar = async () => {
+    if (starring) return;
+    setStarring(true);
     try {
       const { data } = await api.post(`/boards/${boardId}/star`);
       const newStarred = data.starred
@@ -114,6 +117,7 @@ export default function BoardPage() {
       dispatch(updateBoardDetails({ id: boardId, starred: newStarred }));
       toast(data.starred ? '⭐ Starred!' : 'Removed from starred');
     } catch {}
+    finally { setStarring(false); }
   };
 
   return (
@@ -150,8 +154,8 @@ export default function BoardPage() {
               </div>
             )}
           </div>
-          <button onClick={handleStar} title={isStarred ? 'Unstar' : 'Star'}
-            className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+          <button onClick={handleStar} disabled={starring} title={isStarred ? 'Unstar' : 'Star'}
+            className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:cursor-not-allowed ${
               isStarred ? 'text-amber-400 bg-amber-400/15' : 'text-white/30 hover:text-white/70 hover:bg-white/10'
             }`}>
             <Star size={15} fill={isStarred ? 'currentColor' : 'none'} />

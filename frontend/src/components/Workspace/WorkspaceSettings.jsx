@@ -22,6 +22,8 @@ export default function WorkspaceSettings({ workspace, currentUserId, onClose })
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
 
   const isOwner = workspace.owner?._id === currentUserId || workspace.owner === currentUserId;
   const myMember = workspace.members?.find(m => (m.user?._id || m.user) === currentUserId);
@@ -42,23 +44,29 @@ export default function WorkspaceSettings({ workspace, currentUserId, onClose })
 
   const handleInvite = async e => {
     e.preventDefault();
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim() || inviting) return;
+    setInviting(true);
     try {
       await dispatch(addMember({ workspaceId: workspace._id, email: inviteEmail.trim(), role: inviteRole })).unwrap();
       toast.success(`Invited ${inviteEmail}`);
       setInviteEmail('');
     } catch (err) {
       toast.error(err || 'Failed to invite member');
+    } finally {
+      setInviting(false);
     }
   };
 
   const handleRemove = async (userId, userName) => {
-    if (!confirm(`Remove ${userName} from this workspace?`)) return;
+    if (removingId || !confirm(`Remove ${userName} from this workspace?`)) return;
+    setRemovingId(userId);
     try {
       await dispatch(removeMember({ workspaceId: workspace._id, userId })).unwrap();
       toast.success(`${userName} removed`);
     } catch (err) {
       toast.error(err || 'Failed to remove member');
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -154,8 +162,8 @@ export default function WorkspaceSettings({ workspace, currentUserId, onClose })
                     <option value="member">Member</option>
                     <option value="viewer">Viewer</option>
                   </select>
-                  <button type="submit" className="btn-primary shrink-0">
-                    <UserPlus size={15} />
+                  <button type="submit" disabled={inviting} className="btn-primary shrink-0 disabled:opacity-60 disabled:cursor-not-allowed">
+                    {inviting ? '…' : <UserPlus size={15} />}
                   </button>
                 </form>
               </div>
@@ -195,8 +203,8 @@ export default function WorkspaceSettings({ workspace, currentUserId, onClose })
                           {roleConfig.label}
                         </span>
                         {isAdmin && !isCurrentUser && !isWorkspaceOwner && (
-                          <button onClick={() => handleRemove(memberId, member.name)}
-                            className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-50 transition-all">
+                          <button onClick={() => handleRemove(memberId, member.name)} disabled={removingId === memberId}
+                            className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                             <Trash2 size={13} />
                           </button>
                         )}

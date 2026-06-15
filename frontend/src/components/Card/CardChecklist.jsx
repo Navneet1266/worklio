@@ -7,6 +7,7 @@ export default function CardChecklist({ checklist, cardId }) {
   const [items, setItems] = useState(checklist.items || []);
   const [addingItem, setAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState('');
+  const [addingLoading, setAddingLoading] = useState(false);
 
   const completed = items.filter(i => i.completed).length;
   const total = items.length;
@@ -27,7 +28,8 @@ export default function CardChecklist({ checklist, cardId }) {
 
   const addItem = async e => {
     e.preventDefault();
-    if (!newItemText.trim()) return;
+    if (!newItemText.trim() || addingLoading) return;
+    setAddingLoading(true);
     try {
       const { data } = await api.post(`/cards/${cardId}/checklists/${checklist._id}/items`, {
         text: newItemText.trim(),
@@ -37,6 +39,8 @@ export default function CardChecklist({ checklist, cardId }) {
       setNewItemText('');
     } catch {
       toast.error('Failed to add item');
+    } finally {
+      setAddingLoading(false);
     }
   };
 
@@ -87,7 +91,8 @@ export default function CardChecklist({ checklist, cardId }) {
             autoFocus
             onKeyDown={e => e.key === 'Escape' && setAddingItem(false)} />
           <div className="flex gap-2 mt-2">
-            <button type="submit" className="btn-sm bg-primary-600 text-white hover:bg-primary-700">Add</button>
+            <button type="submit" disabled={addingLoading} className="btn-sm bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed">
+              {addingLoading ? 'Adding…' : 'Add'}</button>
             <button type="button" onClick={() => { setAddingItem(false); setNewItemText(''); }}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
               <X size={15} />

@@ -24,6 +24,8 @@ export default function CardComments({ cardId, boardId }) {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     if (!cardId) return;
@@ -46,22 +48,29 @@ export default function CardComments({ cardId, boardId }) {
   };
 
   const handleEdit = async id => {
-    if (!editText.trim()) return;
+    if (!editText.trim() || editLoading) return;
+    setEditLoading(true);
     try {
       const { data } = await api.put(`/comments/${id}`, { text: editText.trim() });
       setComments(prev => prev.map(c => (c._id === id ? data : c)));
       setEditingId(null);
     } catch {
       toast.error('Failed to update comment');
+    } finally {
+      setEditLoading(false);
     }
   };
 
   const handleDelete = async id => {
+    if (deletingId) return;
+    setDeletingId(id);
     try {
       await api.delete(`/comments/${id}`);
       setComments(prev => prev.filter(c => c._id !== id));
     } catch {
       toast.error('Failed to delete comment');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -111,8 +120,9 @@ export default function CardComments({ cardId, boardId }) {
                     className="w-full px-3 py-2 border border-primary-400 rounded-xl text-sm focus:outline-none resize-none"
                     rows={2} autoFocus />
                   <div className="flex gap-2 mt-1.5">
-                    <button onClick={() => handleEdit(comment._id)}
-                      className="btn-sm bg-primary-600 text-white hover:bg-primary-700">Save</button>
+                    <button onClick={() => handleEdit(comment._id)} disabled={editLoading}
+                      className="btn-sm bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                      {editLoading ? 'Saving…' : 'Save'}</button>
                     <button onClick={() => setEditingId(null)}
                       className="btn-sm btn-secondary">Cancel</button>
                   </div>
@@ -128,9 +138,9 @@ export default function CardComments({ cardId, boardId }) {
                         className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
                         <Edit2 size={11} /> Edit
                       </button>
-                      <button onClick={() => handleDelete(comment._id)}
-                        className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
-                        <Trash2 size={11} /> Delete
+                      <button onClick={() => handleDelete(comment._id)} disabled={deletingId === comment._id}
+                        className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Trash2 size={11} /> {deletingId === comment._id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   )}

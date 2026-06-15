@@ -95,10 +95,12 @@ export default function Dashboard() {
   };
 
   const isNew = workspaces.length === 0;
+  const [creatingWs, setCreatingWs] = useState(false);
 
   const doCreateWs = async e => {
     e.preventDefault();
-    if (!wsName.trim()) return;
+    if (!wsName.trim() || creatingWs) return;
+    setCreatingWs(true);
     try {
       const r = await dispatch(createWorkspace({ name: wsName.trim(), description: wsDesc })).unwrap();
       dispatch(fetchWorkspaceBoards(r._id));
@@ -106,6 +108,7 @@ export default function Dashboard() {
       toast.success('Workspace created!');
       setShowNewWs(false); setWsName(''); setWsDesc('');
     } catch (e) { toast.error(e || 'Failed'); }
+    finally { setCreatingWs(false); }
   };
 
 
@@ -639,10 +642,10 @@ export default function Dashboard() {
                   placeholder="What's this workspace for?" className="input-field" />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 text-sm font-bold py-2.5 rounded-xl text-white shadow-md hover:shadow-lg transition-all"
+                <button type="submit" disabled={creatingWs}
+                  className="flex-1 flex items-center justify-center gap-2 text-sm font-bold py-2.5 rounded-xl text-white shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
-                  <Plus size={15} /> Create workspace
+                  <Plus size={15} /> {creatingWs ? 'Creating…' : 'Create workspace'}
                 </button>
                 <button type="button" onClick={() => setShowNewWs(false)} className="btn-secondary px-5">Cancel</button>
               </div>
