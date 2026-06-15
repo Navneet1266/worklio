@@ -53,6 +53,7 @@ export default function BoardPage() {
   const [showSprintManager, setShowSprintManager] = useState(false);
   const [showTeamView, setShowTeamView]     = useState(false);
   const [view, setView]                     = useState('board'); // 'board' | 'backlog'
+  const [starring, setStarring]             = useState(false);
 
   useSocket(boardId);
 
@@ -104,7 +105,6 @@ export default function BoardPage() {
 
   const isStarred    = board.starred?.includes(user?._id);
   const boardMembers = board.members || [];
-  const [starring, setStarring] = useState(false);
 
   const handleStar = async () => {
     if (starring) return;
