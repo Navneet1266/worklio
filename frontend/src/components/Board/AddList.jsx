@@ -8,19 +8,23 @@ export default function AddList({ boardId }) {
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || loading) return;
+    setLoading(true);
     try {
       await dispatch(createList({ title: title.trim(), boardId })).unwrap();
       setTitle('');
       inputRef.current?.focus();
     } catch {
       toast.error('Failed to create list');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,9 +45,9 @@ export default function AddList({ boardId }) {
           className="input-field mb-2 text-sm"
           onKeyDown={e => e.key === 'Escape' && setOpen(false)} />
         <div className="flex items-center gap-2">
-          <button type="submit"
-            className="btn-sm bg-primary-600 hover:bg-primary-700 text-white">
-            Add list
+          <button type="submit" disabled={loading}
+            className="btn-sm bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-60 disabled:cursor-not-allowed">
+            {loading ? 'Creating…' : 'Add list'}
           </button>
           <button type="button" onClick={() => { setOpen(false); setTitle(''); }}
             className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-white rounded-lg transition-colors">

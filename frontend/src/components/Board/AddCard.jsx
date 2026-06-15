@@ -10,6 +10,7 @@ export default function AddCard({ listId, boardId }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [sprintId, setSprintId] = useState('');
+  const [loading, setLoading] = useState(false);
   const textareaRef = useRef(null);
 
   const activeSprints = sprints.filter(s => s.status !== 'completed');
@@ -24,7 +25,8 @@ export default function AddCard({ listId, boardId }) {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || loading) return;
+    setLoading(true);
     try {
       await dispatch(createCard({
         title: title.trim(),
@@ -36,6 +38,8 @@ export default function AddCard({ listId, boardId }) {
       textareaRef.current?.focus();
     } catch {
       toast.error('Failed to create card');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,10 +87,10 @@ export default function AddCard({ listId, boardId }) {
       )}
 
       <div className="flex items-center gap-2 mt-2">
-        <button type="submit"
-          className="text-xs font-black px-4 py-2 rounded-xl text-white shadow-sm transition-opacity hover:opacity-90"
+        <button type="submit" disabled={loading}
+          className="text-xs font-black px-4 py-2 rounded-xl text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
           style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
-          Add issue
+          {loading ? 'Adding…' : 'Add issue'}
         </button>
         <button type="button" onClick={() => { setOpen(false); setTitle(''); }}
           className="w-8 h-8 text-white/50 hover:text-white/80 hover:bg-white/15 rounded-xl flex items-center justify-center transition-colors">
